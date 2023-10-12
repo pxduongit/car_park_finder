@@ -44,3 +44,4 @@ API that get Latitude and Longitude and return list car park sorted by distance 
 - Enhance data by batch. Insert and update list data by batch
 - Store Car-park availability history if we need other business in the future. We also need to keep history data for about 1 week or same.
 - Implement liquibase for Database structure initial and data migrate in further.
+- Implement Logging
