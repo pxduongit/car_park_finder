@@ -44,6 +44,8 @@ public class InitCarParkInformation implements CommandLineRunner {
                     Double yCoord = Double.valueOf(record.get("y_coord"));
                     carParkEntity.setXCoordinate(xCoord);
                     carParkEntity.setYCoordinate(yCoord);
+                    // convert to 4326 coordinate, use open source
+                    // https://github.com/cgcai/SVY21
                     LatLonCoordinate coordinate = new SVY21Coordinate(yCoord, xCoord).asLatLon();
 
                     carParkEntity.setLongitude(coordinate.getLongitude());

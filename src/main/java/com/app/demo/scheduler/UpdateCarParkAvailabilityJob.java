@@ -42,6 +42,7 @@ public class UpdateCarParkAvailabilityJob {
 
                 //todo enhance case item has more than 1 element and timestamp is difference
 
+                // We will flat list car parking availability for easy processing
                 List<CarParkingAvailabilityEntity> listParkingFlat = new ArrayList<>();
                 for(CarParkAvailability carParkAvailability : carParkAvailabilityRes.getItems()){
 
@@ -52,6 +53,9 @@ public class UpdateCarParkAvailabilityJob {
                             CarParkingAvailabilityEntity entity = CarParkingAvailabilityEntity.builder()
                                     .carParkNo(carParkData.getCarParkNumber())
                                     .lotType(carParkInformation.getLotType())
+                                    // each car lot with available status will have an unique code.
+                                    // So that it will be easy check or query if data is exists.
+                                    // And if data size is large, we can have index for this row in DB
                                     .code(String.format("%s|%s", carParkData.getCarParkNumber(), carParkInformation.getLotType()))
                                     .lotsAvailable(Integer.valueOf(carParkInformation.getLotsAvailable()))
                                     .totalLot(Integer.valueOf(carParkInformation.getTotalLots()))
@@ -62,6 +66,8 @@ public class UpdateCarParkAvailabilityJob {
                     }
                 }
 
+                // Get list exists car parking available for update or insert history in further.
+                // We should split size query to 1000 element part due to limit of some DB engine like Oracle, ...
                 List<CarParkingAvailabilityEntity> existEntities = new ArrayList<>();
                 int subSize = 1000;
                 CollectionUtil.splitAndConsume(
@@ -72,15 +78,18 @@ public class UpdateCarParkAvailabilityJob {
                 Map<String, CarParkingAvailabilityEntity> carParkingAvailabilityEntityMap = existEntities.stream().
                         collect(Collectors.toMap(CarParkingAvailabilityEntity::getCode, entity -> entity));
 
+                // For exists car park available, we update. With other, we create new one.
                 for(CarParkingAvailabilityEntity entity: listParkingFlat){
                     CarParkingAvailabilityEntity existEntity = carParkingAvailabilityEntityMap.get(entity.getCode());
 
                     if(Objects.nonNull(existEntity)){
+                        // case exists car_park_no with lot_type, we can update and can save to history in further.
                         existEntity.setLotsAvailable(entity.getLotsAvailable());
                         existEntity.setTotalLot(entity.getTotalLot());
                         existEntity.setUpdateDatetime(entity.getUpdateDatetime());
                         carParkingAvailabilityRepository.save(existEntity);
                     }else{
+                        //case new car_park_no and lot_type, we create new one
                         CarParkEntity carParkEntity = carParkRepository.findByCarParkNo(entity.getCarParkNo()).orElse(null);
                         if(Objects.nonNull(carParkEntity)){
                             entity.setCarParkId(carParkEntity.getId());
